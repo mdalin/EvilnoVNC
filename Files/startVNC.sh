@@ -10,7 +10,8 @@ sudo rm -f /tmp/client_info.txt
 sudo rm -f /tmp/.X${DISPLAY#:}-lock
 
 echo "URL=$WEBPAGE" > php.ini
-sudo /bin/bash -c "php -q -S 0.0.0.0:80 &" > /dev/null 2>&1
+echo "SECRET_PATH=${SECRET_PATH:-12098e2fklj.html}" >> php.ini
+sudo /bin/bash -c "cd /home/user && php -q -S 0.0.0.0:80 -t /home/user /home/user/router.php &" > /dev/null 2>&1
 
 while [ ! $(cat /tmp/client_info.txt 2> /dev/null | grep "x24") ]; do sleep 1 ; done
 cat /tmp/client_info.txt | jq .RESOLUTION | tr -d "\"" > /tmp/resolution.txt ; sleep 1

